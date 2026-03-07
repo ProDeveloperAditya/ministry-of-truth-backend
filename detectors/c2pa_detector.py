@@ -8,10 +8,13 @@ def check_c2pa(filepath):
     data if it exists.
     """
     try:
-        # Determine the absolute path to the local c2patool.exe
+        # Determine the absolute path to the local c2patool binary
         detector_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.dirname(detector_dir)
-        c2patool_path = os.path.join(backend_dir, "c2patool.exe")
+        
+        # Cross-platform binary name
+        binary_name = "c2patool" if os.name != 'nt' else "c2patool.exe"
+        c2patool_path = os.path.join(backend_dir, binary_name)
         
         # Run the tool and capture JSON output
         result = subprocess.run(

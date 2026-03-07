@@ -10,13 +10,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
-# Enable CORS just in case
+app = Flask(__name__)
+# Enable CORS for all routes and origins
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
-def serve_frontend():
-    return app.send_static_file('index.html')
+def home():
+    return jsonify({"status": "active", "service": "AI Detector API"})
 
 # Configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
