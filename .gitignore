@@ -1,0 +1,12 @@
+# Environment and Secrets
+.env
+__pycache__/
+*.pyc
+
+# Project Directories
+uploads/
+test_dataset/
+
+# Local Dev
+.vscode/
+.idea/
