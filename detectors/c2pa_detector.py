@@ -13,8 +13,17 @@ def check_c2pa(filepath):
         backend_dir = os.path.dirname(detector_dir)
         
         # Cross-platform binary name
-        binary_name = "c2patool" if os.name != 'nt' else "c2patool.exe"
+        if os.name == 'nt':
+            binary_name = "c2patool.exe"
+        else:
+            # Check if running in Docker/Linux
+            binary_name = "c2patool"
+            
         c2patool_path = os.path.join(backend_dir, binary_name)
+        
+        # If not found in current dir, check /app/c2patool (Docker root)
+        if not os.path.exists(c2patool_path) and os.name != 'nt':
+            c2patool_path = "/app/c2patool"
         
         # Run the tool and capture JSON output
         result = subprocess.run(

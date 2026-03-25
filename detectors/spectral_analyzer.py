@@ -57,18 +57,21 @@ def perform_spectral_analysis(image_path):
         fft_score = float(std_hf / (mean_hf + 1e-8))
         result['fft_score'] = fft_score
 
-        # Heuristic Threshold
-        # These boundaries can be tuned. Generally, GANs exhibit higher variance
-        # in high frequencies than Diffusion models.
-        threshold = 0.15 
+        # Calibrated Heuristic Thresholds
+        # GANs exhibit high variance > 0.150
+        # Diffusion models exhibit abnormal smoothness < 0.095
         
-        if fft_score > threshold:
-            result['generator_type'] = 'GAN (Generative Adversarial Network)'
+        if fft_score > 0.150:
+            result['generator_type'] = 'GAN / Periodic Spikes'
             result['details'] = f'Detected periodic high-frequency checkerboard artifacts (Score: {fft_score:.2f}).'
             result['status'] = 'success'
+        elif fft_score < 0.095:
+            result['generator_type'] = 'Diffusion / Unnatural Smoothness'
+            result['details'] = f'Detected unnaturally smooth frequency roll-off typical of AI diffusion (Score: {fft_score:.2f}).'
+            result['status'] = 'success'
         else:
-            result['generator_type'] = 'Diffusion or Transformer'
-            result['details'] = f'Detected smooth high-frequency roll-off typical of iterative denoising (Score: {fft_score:.2f}).'
+            result['generator_type'] = 'Inconclusive (Normal Roll-off)'
+            result['details'] = f'Frequency spectrum falls within natural camera physics variance (Score: {fft_score:.2f}).'
             result['status'] = 'success'
 
     except Exception as e:

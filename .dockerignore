@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+uploads/
+*.exe
+*.zip
+*.tar.gz
+test_local_web.py
+test_accuracy.py
+test_ycbcr_hue.py
+test_hive_auth.py
+templates/
+test_images/
+out.txt
+log.txt

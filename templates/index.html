@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Detector - Advanced Vision Test</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #f0f0f0; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #00e5ff; margin-bottom: 5px; }
+        .upload-area { background: #1e1e1e; padding: 30px; border-radius: 12px; border: 2px dashed #333; text-align: center; margin-bottom: 20px; transition: border 0.3s; }
+        .upload-area:hover { border-color: #00e5ff; }
+        input[type="file"] { display: none; }
+        .btn { background: #00e5ff; color: #000; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .btn:hover { background: #00b3cc; }
+        .loader { display: none; text-align: center; margin: 20px 0; }
+        
+        /* Results Section */
+        .results-container { display: none; background: #1e1e1e; border-radius: 12px; padding: 25px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .verdict-box { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-size: 24px; font-weight: bold; }
+        .verdict-ai { background: rgba(255, 60, 60, 0.2); border: 1px solid #ff3c3c; color: #ff3c3c; }
+        .verdict-real { background: rgba(60, 255, 60, 0.2); border: 1px solid #3cff3c; color: #3cff3c; }
+        
+        .result-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 20px;
+        }
+        
+        .donut-wrapper {
+            width: 80px;
+            height: 80px;
+            display: none;
+            position: relative;
+        }
+        .donut-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#444 100%, #444 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .donut-chart::before {
+            content: "";
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background: #1e1e1e;
+            border-radius: 50%;
+        }
+        .donut-text {
+            position: relative;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .layer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
+        .layer-card { background: #2a2a2a; border-radius: 8px; padding: 15px; position: relative; overflow: hidden; }
+        .layer-card h3 { color: #00e5ff; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 16px;}
+        .layer-confidence { background: rgba(0,0,0,0.4); padding: 5px 10px; border-radius: 4px; font-size: 12px; margin-bottom: 15px; display: inline-block; width: auto; font-weight: bold; }
+        
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+        .data-label { color: #aaa; }
+        .data-value { font-weight: bold; }
+        .details-text { font-size: 13px; color: #ccc; margin-top: 10px; line-height: 1.4; background: #1a1a1a; padding: 10px; border-radius: 4px; }
+        
+        .visual-mask { margin-top: 25px; text-align: center; background: #2a2a2a; padding: 20px; border-radius: 8px; }
+        .visual-mask h3 { color: #00e5ff; margin-top: 0; }
+        .visual-mask img { max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #444; }
+        .mask-desc { font-size: 13px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Advanced AI Vision Test</h1>
+        <p>Testing Code-Driven Forensics: Hue Gradients, FFT Spikes, and Metadata</p>
+    </div>
+
+    <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <h2 style="color: #fff; margin-bottom: 15px;">Click to Select Image</h2>
+        <p style="color: #888;">Only tests standard image files (JPG, PNG)</p>
+        <input type="file" id="file-input" accept="image/*" onchange="uploadImage(this)">
+    </div>
+    
+    <div class="loader" id="loader">
+        <h3 style="color: #00e5ff;">Analyzing Extracted Mathematical Layers...</h3>
+    </div>
+
+    <div class="results-container" id="results">
+        <div class="result-header" id="result-header">
+            <div class="donut-wrapper" id="donut-wrapper">
+                <div class="donut-chart" id="donut-chart">
+                    <div class="donut-text" id="donut-text">0%</div>
+                </div>
+            </div>
+            <div>
+                <h2 id="final-verdict" style="margin: 0;">Upload an image to test</h2>
+            </div>
+        </div>
+        
+        <div class="layer-grid">
+            <!-- Hue Layer -->
+            <div class="layer-card">
+                <h3>1. Hue Gradient Analysis</h3>
+                <div class="layer-confidence" id="hue-conf">Conf: -</div>
+                <div class="data-row"><span class="data-label">Edge Score:</span> <span class="data-value" id="hue-score">-</span></div>
+                <div class="data-row"><span class="data-label">Type:</span> <span class="data-value" id="hue-type">-</span></div>
+                <div class="details-text" id="hue-details"></div>
+            </div>
+            
+            <!-- FFT Layer -->
+            <div class="layer-card">
+                <h3>2. High-Frequency (FFT)</h3>
+                <div class="layer-confidence" id="fft-conf">Conf: -</div>
+                <div class="data-row"><span class="data-label">Spikiness:</span> <span class="data-value" id="fft-score">-</span></div>
+                <div class="data-row"><span class="data-label">Type:</span> <span class="data-value" id="fft-type">-</span></div>
+                <div class="details-text" id="fft-details"></div>
+            </div>
+            
+            <!-- Metadata Layer -->
+            <div class="layer-card">
+                <h3>3. EXIF & Structure</h3>
+                <div class="layer-confidence" id="meta-conf">Conf: -</div>
+                <div class="data-row"><span class="data-label">AI Conf:</span> <span class="data-value" id="meta-score">-</span></div>
+                <div class="data-row"><span class="data-label">Type:</span> <span class="data-value" id="meta-type">-</span></div>
+                <div class="details-text" id="meta-details"></div>
+            </div>
+
+            <!-- ELA & Noise Layer -->
+            <div class="layer-card">
+                <h3>4. Physics / ELA</h3>
+                <div class="layer-confidence" id="phys-conf">Conf: -</div>
+                <div class="data-row"><span class="data-label">ELA Var:</span> <span class="data-value" id="ela-score">-</span></div>
+                <div class="data-row"><span class="data-label">Noise Var:</span> <span class="data-value" id="noise-score">-</span></div>
+                <div class="details-text" id="ela-details"></div>
+            </div>
+        </div>
+        
+        <div class="visual-mask" id="visual-mask-container">
+            <h3>Visual Debug: Color Stitching Artifacts</h3>
+            <img id="mask-img" src="" alt="Hue Mask" style="display: none;">
+            <p class="mask-desc" id="mask-desc"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function uploadImage(input) {
+        if (!input.files || input.files.length === 0) return;
+        
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        document.getElementById('results').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        
+        fetch('/api/test_analyze', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loader').style.display = 'none';
+            if (data.error) {
+                alert("Error: " + data.error);
+                return;
+            }
+            populateResults(data);
+        })
+        .catch(err => {
+            document.getElementById('loader').style.display = 'none';
+            alert("Connection error occurred.");
+            console.error(err);
+        });
+    }
+    
+    function populateResults(data) {
+        // Verdict
+        const score = data.overall_ai_score;
+        const pct = Math.round(score * 100);
+        
+        let color = '#3cff3c';
+        let resultClass = 'verdict-real';
+        if (score >= 0.7) { color = '#ff3c3c'; resultClass = 'verdict-ai'; }
+        else if (score >= 0.4) { color = '#ffc107'; resultClass = 'verdict-ai'; }
+        
+        const header = document.getElementById('result-header');
+        header.className = 'result-header ' + resultClass;
+        header.style.padding = '15px';
+        header.style.borderRadius = '8px';
+        header.style.marginBottom = '20px';
+        
+        document.getElementById('final-verdict').innerHTML = `Verdict: ${data.verdict} <br><span style="font-size: 16px; color:#aaa;">(${data.overall_ai_score}/1.0 AI Score)</span>`;
+        
+        document.getElementById('donut-wrapper').style.display = 'block';
+        document.getElementById('donut-text').textContent = pct + '%';
+        document.getElementById('donut-chart').style.background = `conic-gradient(${color} ${pct}%, #444 0)`;
+        
+        // Helper function for layer badges
+        function mapLayerColor(vEl, scoreVal) {
+            vEl.textContent = Math.round(scoreVal * 100) + '% AI Match';
+            if(scoreVal >= 0.7) { vEl.style.color = '#ff3c3c'; vEl.style.borderLeft = '3px solid #ff3c3c'; }
+            else if(scoreVal >= 0.4) { vEl.style.color = '#ffc107'; vEl.style.borderLeft = '3px solid #ffc107'; }
+            else { vEl.style.color = '#3cff3c'; vEl.style.borderLeft = '3px solid #3cff3c'; }
+        }
+
+        // Hue
+        const hue = data.layers.hue_analysis;
+        mapLayerColor(document.getElementById('hue-conf'), hue.layer_ai_score);
+        document.getElementById('hue-score').textContent = hue.edge_density_score ? hue.edge_density_score.toFixed(2) : '-';
+        document.getElementById('hue-type').textContent = hue.generator_type;
+        document.getElementById('hue-details').textContent = hue.details;
+        
+        // FFT
+        const fft = data.layers.spectral_analysis;
+        mapLayerColor(document.getElementById('fft-conf'), fft.layer_ai_score);
+        document.getElementById('fft-score').textContent = fft.fft_score ? fft.fft_score.toFixed(2) : '-';
+        document.getElementById('fft-type').textContent = fft.generator_type;
+        document.getElementById('fft-details').textContent = fft.details;
+        
+        // Meta
+        const meta = data.layers.metadata_analysis;
+        mapLayerColor(document.getElementById('meta-conf'), meta.layer_ai_score);
+        document.getElementById('meta-score').textContent = meta.ai_confidence ? meta.ai_confidence.toFixed(2) : '-';
+        document.getElementById('meta-type').textContent = meta.generator_type;
+        document.getElementById('meta-details').textContent = meta.details;
+
+        // ELA & Noise
+        const noise = data.layers.noise_ela_analysis;
+        mapLayerColor(document.getElementById('phys-conf'), noise.layer_ai_score);
+        document.getElementById('ela-score').textContent = noise.ela_variance ? noise.ela_variance.toFixed(2) : '-';
+        document.getElementById('noise-score').textContent = noise.noise_variance ? noise.noise_variance.toFixed(2) : '-';
+        document.getElementById('ela-details').textContent = noise.details;
+        
+        // Img mask rendering logic
+        const imgEl = document.getElementById('mask-img');
+        const maskDesc = document.getElementById('mask-desc');
+        const maskCont = document.getElementById('visual-mask-container');
+        
+        if (hue.visual_mask_base64) {
+            imgEl.src = "data:image/jpeg;base64," + hue.visual_mask_base64;
+            imgEl.style.display = 'inline-block';
+            
+            // Contextualize the mask to avoid confusing the user
+            if (hue.layer_ai_score >= 0.7) {
+                maskCont.style.border = "1px solid #ff3c3c";
+                maskDesc.innerHTML = "<strong style='color:#ff3c3c'>AI Stitching Highlighted:</strong> The red lines above expose severe geometric breaks in color hue invisible to the naked eye.";
+            } else {
+                maskCont.style.border = "1px solid #3cff3c";
+                maskDesc.innerHTML = "<strong style='color:#3cff3c'>Natural Transitions Highlighted:</strong> The color edges detected above map perfectly to physical light/shadow boundaries. No AI mistakes found.";
+            }
+        } else {
+            imgEl.style.display = 'none';
+        }
+        
+        document.getElementById('results').style.display = 'block';
+    }
+</script>
+</body>
+</html>
