@@ -4,74 +4,120 @@ import os
 
 def check_c2pa(filepath):
     """
-    Runs the c2patool CLI against the image file to extract C2PA provenance 
-    data if it exists.
+    Layer 1: C2PA Cryptographic Provenance Detection.
+    
+    Runs the c2patool CLI against the image to extract Content Credentials.
+    
+    Improvements over original:
+    - Extracts c2pa.actions assertions (action type + software agent)
+    - Checks ingredient manifests (composited images)
+    - Returns structured metadata for richer reasoning
     """
     try:
-        # Determine the absolute path to the local c2patool binary
+        # Determine binary path
         detector_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.dirname(detector_dir)
         
-        # Cross-platform binary name
         if os.name == 'nt':
             binary_name = "c2patool.exe"
         else:
-            # Check if running in Docker/Linux
             binary_name = "c2patool"
             
         c2patool_path = os.path.join(backend_dir, binary_name)
         
-        # If not found in current dir, check /app/c2patool (Docker root)
         if not os.path.exists(c2patool_path) and os.name != 'nt':
             c2patool_path = "/app/c2patool"
         
-        # Run the tool and capture JSON output
+        # Run the tool
         result = subprocess.run(
             [c2patool_path, filepath, "--detailed"],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=15  # Prevent hanging
         )
         
-        # Check for tool-level errors (e.g. unsupported file, no metadata)
         if result.returncode != 0:
-            # If it's just a file with no C2PA data or unsupported by the tool, don't show an "Offline" badge.
-            # Just treat it as no metadata found.
-            return {"detected": False, "generator": "Unknown", "details": None, "error": None}
+            return {
+                "detected": False, 
+                "generator": "Unknown", 
+                "action_type": None,
+                "software_agent": None,
+                "has_ingredients": False,
+                "details": None, 
+                "error": None
+            }
             
-        # Parse JSON output from stdout
         try:
             manifest_data = json.loads(result.stdout)
             
-            # Basic parsing to find the generator
             generator = "Unknown"
+            action_type = None
+            software_agent = None
+            has_ingredients = False
+            
             active_manifest_uri = manifest_data.get('active_manifest')
             if active_manifest_uri and 'manifests' in manifest_data:
                 active_manifest = manifest_data['manifests'].get(active_manifest_uri, {})
                 
-                # Check claim generator string first
                 claim = active_manifest.get('claim', {})
-                if 'claim_generator' in claim:
-                    generator = claim['claim_generator'].split('/')[0] # e.g. "make_test_images" or "Adobe Photoshop"
                 
+                # Extract claim generator
+                if 'claim_generator' in claim:
+                    generator = claim['claim_generator'].split('/')[0]
+                
+                # Parse c2pa.actions assertions for action type and software agent
                 assertions = claim.get('assertions', [])
                 for assertion in assertions:
                     if assertion.get('label') == 'c2pa.actions':
-                        # Can dig deeper for software agent if needed
-                        pass
+                        data = assertion.get('data', {})
+                        actions = data.get('actions', [])
+                        if actions:
+                            first_action = actions[0]
+                            action_type = first_action.get('action', None)
+                            # softwareAgent tells us exactly which tool was used
+                            sa = first_action.get('softwareAgent', '')
+                            if isinstance(sa, dict):
+                                software_agent = sa.get('name', str(sa))
+                            elif isinstance(sa, str) and sa:
+                                software_agent = sa
+                
+                # Check for ingredients (parent manifests = composited/derived image)
+                ingredients = claim.get('ingredients', [])
+                if ingredients:
+                    has_ingredients = True
                                 
             return {
                 "detected": True,
                 "generator": generator,
+                "action_type": action_type,         # e.g. "c2pa.created", "c2pa.edited"
+                "software_agent": software_agent,   # e.g. "Adobe Firefly 3.0"
+                "has_ingredients": has_ingredients,  # True if derived from another image
                 "details": manifest_data,
                 "error": None
             }
             
         except json.JSONDecodeError:
-            return {"detected": False, "generator": "Unknown", "details": None, "error": None}
+            return {
+                "detected": False, "generator": "Unknown",
+                "action_type": None, "software_agent": None,
+                "has_ingredients": False,
+                "details": None, "error": None
+            }
             
+    except subprocess.TimeoutExpired:
+        return {
+            "detected": False, "generator": "Unknown",
+            "action_type": None, "software_agent": None,
+            "has_ingredients": False,
+            "details": None, "error": "c2patool timed out"
+        }
     except Exception as e:
-        return {"detected": False, "generator": "Unknown", "details": None, "error": str(e)}
+        return {
+            "detected": False, "generator": "Unknown",
+            "action_type": None, "software_agent": None,
+            "has_ingredients": False,
+            "details": None, "error": str(e)
+        }
 
 if __name__ == "__main__":
-    # Test script
     pass
